@@ -278,6 +278,16 @@ class QuestionSelectionEnv(gym.Env):
                     compile=False  # We don't need compilation for inference
                 )
                 print(f"✓ Successfully loaded student model from {model_path}")
+                
+                # Detect the input layer name for this model
+                if hasattr(self.student_model, 'input_names') and self.student_model.input_names:
+                    self.model_input_name = self.student_model.input_names[0]
+                    print(f"ℹ️ Model input layer name: {self.model_input_name}")
+                else:
+                    # Fallback to 'input_1' if we can't detect it
+                    self.model_input_name = 'input_1'
+                    print(f"ℹ️ Using default input layer name: {self.model_input_name}")
+                
                 model_loaded = True
                 break
             except Exception as e:
@@ -374,8 +384,22 @@ class QuestionSelectionEnv(gym.Env):
             idx = int(val) % 100  # Ensure index is within [0,99]
             X_input[0, i, idx] = 1
 
-        # Predict with LSTM model - use 'input_1' as the input name
-        y_pred = self.student_model.predict({'input_1': X_input}, verbose=0)
+        # Predict with LSTM model - use the detected input name
+        try:
+            # Try using the detected input name (e.g., 'skill_input' or 'input_1')
+            y_pred = self.student_model.predict({self.model_input_name: X_input}, verbose=0)
+        except Exception as e:
+            # Fallback: try passing the array directly without dictionary
+            print(f"⚠️ Error with named input '{self.model_input_name}': {e}")
+            print(f"⚠️ Attempting to predict with direct array input...")
+            try:
+                y_pred = self.student_model.predict(X_input, verbose=0)
+            except Exception as e2:
+                print(f"❌ Direct array prediction also failed: {e2}")
+                # Last resort: return zero performance
+                print(f"⚠️ Returning zero performance as fallback")
+                self.student_performance = np.zeros(self.num_skills, dtype=np.float32)
+                return self.student_performance
 
         # --- START OF FIX ---
         # Our working model (dkt_model_working.keras) returns a 2D tensor of shape (batch_size, 1),
@@ -495,6 +519,22 @@ class QuestionSelectionEnv(gym.Env):
             print(f"Error in compute_answerability: {e}")
             return 0.5
 
+    def _select_question(self, skill_id, question_type_id):
+        """
+        Select a question based on skill_id and question_type_id.
+        This is a public-facing method used by the API.
+        Returns a pandas Series representing the selected question.
+        """
+        if skill_id < 0 or skill_id >= self.num_skills:
+            raise ValueError(f"Skill id '{skill_id}' out of range.")
+        if question_type_id < 0 or question_type_id >= self.num_question_types:
+            raise ValueError(f"Question type id '{question_type_id}' out of range.")
+        
+        skill = self.all_skills[skill_id]
+        question_type = self.question_types[question_type_id]
+        
+        return self.get_question_from_bank(skill, question_type)
+    
     def get_question_from_bank(self, skill, question_type):
         # Filter for matching skill and question_type
         matches = self.questions_df[

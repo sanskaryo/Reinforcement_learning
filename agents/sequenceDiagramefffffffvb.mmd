@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Agent as PPO Teacher Agent
+    participant Env as Question Environment
+    participant Student as Student Model (DKT)
+    
+    loop Training Step
+        Agent->>Env: Select Action (Question ID)
+        Env->>Student: Simulate Student Answer
+        Student-->>Env: Return Correctness & New State
+        Env->>Env: Calculate Reward
+        Env-->>Agent: Next State, Reward
+        Agent->>Agent: Update Policy
+    end

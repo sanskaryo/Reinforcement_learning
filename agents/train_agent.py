@@ -3,8 +3,7 @@ from stable_baselines3 import PPO
 from environment.question_selection_env_main import QuestionSelectionEnv
 import pandas as pd
 
-# Load your questions data
-questions_df = pd.read_csv('path/to/your/questions.csv')
+questions_df = pd.read_csv("./data/questions.csv")
 
 # Create the environment
 env = QuestionSelectionEnv(questions_df=questions_df, max_steps=100)

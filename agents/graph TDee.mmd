@@ -1,0 +1,20 @@
+graph TD
+    User[Student] -->|HTTPS| FE[Next.js Frontend]
+    FE -->|REST API| BE[FastAPI Backend]
+    
+    subgraph Backend Services
+        BE --> Auth[Auth Service]
+        BE --> RL[RL Engine (PPO/DKT)]
+        BE --> MAB[Bandit Service]
+        BE --> RAG[RAG Service]
+    end
+    
+    subgraph Data Layer
+        BE --> SQL[(Relational DB)]
+        RAG --> Vector[(Vector DB)]
+    end
+    
+    subgraph External AI
+        RAG --> Gemini[Google Gemini API]
+        RL --> Gemini
+    end

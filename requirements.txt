@@ -1,8 +1,5 @@
-# This file contains the exact versions of libraries known to be compatible
-# for the Personalized Learning RL project on Python 3.9.
 
-# Core ML/DL Frameworks
-tensorflow==2.10.1
+tensorflow
 protobuf==3.19.6
 numpy==1.23.5
 
