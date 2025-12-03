@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  streamlit:
+    build: .
+    command: streamlit run webapp/adaptive_quiz_app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  flask:
+    build: .
+    command: python app.py
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    restart: on-failure
+    environment:
+      - FLASK_ENV=production
+
+  trainer:
+    build: .
+    command: python agents/train_agent.py
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    restart: "no"
+    environment:
+      - PYTHONUNBUFFERED=1
